@@ -28,14 +28,6 @@
     cd ~/prometheus/prometheus*
     cp -r . /usr/local/bin/prometheus
 
-- name: Prometheus config file duplicate
-  copy:
-    src: prometheus.service
-    dest: /etc/systemd/system
-    mode: 7777
-    owner: root
-    group: root
-
 - name: Prometheus Start/Enable Check
   service:
     name: prometheus
