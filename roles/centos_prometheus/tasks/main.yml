@@ -29,6 +29,7 @@
     cp -r . /usr/local/bin/prometheus
     
 - name: Prometheus config file duplicate
+  become: true
   copy:
     src: prometheus.service
     dest: /etc/systemd/system
