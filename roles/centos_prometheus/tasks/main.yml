@@ -16,7 +16,7 @@
     
 - name: Install Prometheus (CentOS)
   unarchive:
-    src: https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.1inux-amd64.tar.gz
+    src: https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz
     dest: ~/prometheus
     remote_src: yes
     mode: 0777
