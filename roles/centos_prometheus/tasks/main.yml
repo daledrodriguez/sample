@@ -10,7 +10,7 @@
   file:
     path: 
       - /etc/prometheus
-      -/var/lib/prometheus
+      - /var/lib/prometheus
     mode: 0777
     state: directory
     
