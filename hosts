@@ -1,0 +1,18 @@
+  GNU nano 4.8                       hosts.txt                                 
+[localhost]
+localhosts
+
+[web_servers]
+192.168.56.102
+192.168.56.105
+
+[db_servers]
+192.168.56.103
+192.168.56.105
+
+[file_servers]
+192.168.56.102
+
+[workstations]
+192.168.56.103
+
