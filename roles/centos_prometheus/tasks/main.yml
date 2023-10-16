@@ -37,9 +37,9 @@
         owner: prometheus
         group: prometheus
         mode: '0755'
-     loop:
-       - prometheus
-       - promtool
+      loop:
+        - prometheus
+        - promtool
 
 
     - name: Copy Consoles and Console Libraries
