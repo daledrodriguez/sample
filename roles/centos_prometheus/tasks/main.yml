@@ -1,4 +1,8 @@
-
+---
+- name: Setup Prometheus
+  hosts: your_target_host
+  become: yes
+  tasks:
     - name: Download Prometheus
       get_url:
         url: "https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz"
@@ -31,16 +35,10 @@
       command: mv /tmp/prometheus-2.8.1.linux-amd64 /tmp/prometheuspackage
 
     - name: Copy Prometheus and Promtool Binaries
-      copy:
-        src: "/tmp/prometheuspackage/{{ item }}"
-        dest: /usr/local/bin/{{ item }}
-        owner: prometheus
-        group: prometheus
-        mode: '0755'
+      shell: "cp /tmp/prometheuspackage/{{ item }} /usr/local/bin/ && chown prometheus:prometheus /usr/local/bin/{{ item }}"
       loop:
         - prometheus
         - promtool
-
 
     - name: Copy Consoles and Console Libraries
       copy:
