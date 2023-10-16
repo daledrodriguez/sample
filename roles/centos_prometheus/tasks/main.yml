@@ -1,74 +1,49 @@
+#this is the Prometheus playbook for CentOS
 
-    - name: Download Prometheus
-      get_url:
-        url: "https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz"
-        dest: /tmp/prometheus-2.8.1.linux-amd64.tar.gz
+  - name: Prometheus PATH directory
+    file:
+      path: ~/prometheus
+      state: directory
 
-    - name: Add Prometheus User
-      user:
-        name: prometheus
-        shell: /bin/false
-        system: yes
 
-    - name: Create Directories and Set Ownership
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: prometheus
-        group: prometheus
-        mode: '0755'
-      loop:
+  - name: Creating directory for Prometheus files
+    file:
+      path:
         - /etc/prometheus
         - /var/lib/prometheus
+      mode: 0777
+      state: directory
 
-    - name: Extract Prometheus
-      unarchive:
-        src: /tmp/prometheus-2.8.1.linux-amd64.tar.gz
-        dest: /tmp
-        remote_src: yes
+  - name: Install Prometheus (CentOS)
+    unarchive:
+      src: https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz
+      dest: ~/prometheus
+      remote_src: yes
+      mode: 0777
+      owner: root
+      group: root
 
-    - name: Rename Prometheus Package Directory
-      command: mv /tmp/prometheus-2.8.1.linux-amd64 /tmp/prometheuspackage
+  - name: Configuring Prometheus
+    shell: |
+      cd ~/prometheus/prometheus*
+      cp -r . /usr/local/bin/prometheus
 
-    - name: Copy Prometheus and Promtool Binaries
-      shell: "cp /tmp/prometheuspackage/{{ item }} /usr/local/bin/ && chown prometheus:prometheus /usr/local/bin/{{ item }}"
-      loop:
-        - prometheus
-        - promtool
+  - name: Prometheus config file duplicate
+    copy:
+      src: prometheus.service
+      dest: /etc/systemd/system
+      mode: 7777
+      owner: root
+      group: root
 
-    - name: Copy Consoles and Console Libraries
-      copy:
-        src: "/tmp/prometheuspackage/{{ item }}"
-        dest: /etc/prometheus/{{ item }}
-        owner: prometheus
-        group: prometheus
-        mode: '0755'
-      loop:
-        - consoles
-        - console_libraries
+  - name: Prometheus Start/Enable Check
+    service:
+      name: prometheus
+      state: restarted
+      enabled: true
 
-    - name: Configure Prometheus
-      template:
-        src: prometheus.yml.j2
-        dest: /etc/prometheus/prometheus.yml
-        owner: prometheus
-        group: prometheus
-        mode: '0644'
-
-    - name: Create systemd Unit File for Prometheus
-      template:
-        src: prometheus.service.j2
-        dest: /etc/systemd/system/prometheus.service
-        owner: root
-        group: root
-        mode: '0644'
-
-    - name: Reload systemd
-      systemd:
-        daemon_reload: yes
-
-    - name: Start and Enable Prometheus Service
-      service:
-        name: prometheus
-        state: started
-        enabled: yes
+  - name: httpd Start/Enable Check
+    service:
+      name: httpd
+      state: restarted
+      enabled: true
