@@ -28,14 +28,15 @@
     cd ~/prometheus/prometheus*
     cp -r . /usr/local/bin/prometheus
     
-- name: Prometheus config file duplicate
+- name: Prometheus config file copy (conditionally)
   become: true
   copy:
     src: ~/prometheus/prometheus.service
     dest: /etc/systemd/system
-    mode: 7777
+    mode: 0777
     owner: root
     group: root
+  when: not (prometheus_dir is defined and prometheus_dir.failed and "No such file" in prometheus_dir.msg.failed and "No such file or directory" in prometheus_dir.msg.failed)
 
 - name: Prometheus Start/Enable Check
   service:
