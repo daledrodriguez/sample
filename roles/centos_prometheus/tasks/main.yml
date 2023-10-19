@@ -1,28 +1,32 @@
 ---
     - name: Disable SELinux
-      ansible.builtin.replace:
-        path: /etc/sysconfig/selinux
-        regexp: 'SELINUX=enforcing'
-        replace: 'SELINUX=disabled'
-      when: "'SELINUX=enforcing' in ansible.builtin.file.read('/etc/sysconfig/selinux')"
-    
+      shell: |
+        sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/sysconfig/selinux
+      when: "'SELINUX=enforcing' in (ansible.builtin.shell('cat /etc/sysconfig/selinux').stdout | default(''))"
+
     - name: Reboot the system
-      ansible.builtin.reboot:
-      when: "'SELINUX=disabled' in ansible.builtin.file.read('/etc/sysconfig/selinux')"
-    
+      shell: |
+        if [ "$(getenforce)" == "Disabled" ]; then
+          reboot
+        fi
+      async: 0
+      poll: 0
+      when: "'SELINUX=disabled' in (ansible.builtin.shell('cat /etc/sysconfig/selinux').stdout | default(''))"
+
     - name: Download Prometheus
-      ansible.builtin.get_url:
-        url: "https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz"
-        dest: "/tmp/prometheus-2.8.1.linux-amd64.tar.gz"
-    
+      shell: |
+        wget https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz -O /tmp/prometheus-2.8.1.linux-amd64.tar.gz
+      args:
+        executable: /bin/bash
+
     - name: Add Prometheus User
-      ansible.builtin.user:
-        name: prometheus
-        shell: /bin/false
-        createhome: no
-    
+      shell: |
+        useradd --no-create-home --shell /bin/false prometheus
+      args:
+        executable: /bin/bash
+
     - name: Create Prometheus Directories
-      ansible.builtin.file:
+      file:
         path: "{{ item }}"
         state: directory
         owner: prometheus
@@ -30,35 +34,44 @@
       loop:
         - /etc/prometheus
         - /var/lib/prometheus
-    
+
     - name: Extract Prometheus
-      ansible.builtin.shell: |
+      shell: |
         tar -xvzf /tmp/prometheus-2.8.1.linux-amd64.tar.gz -C /tmp/
         mv /tmp/prometheus-2.8.1.linux-amd64 /usr/local/bin/prometheuspackage
-    
+      args:
+        executable: /bin/bash
+
     - name: Copy Prometheus Binaries
-      ansible.builtin.copy:
-        src: "/usr/local/bin/prometheuspackage/{{ item }}"
-        dest: "/usr/local/bin/{{ item }}"
-        owner: prometheus
-        group: prometheus
+      shell: |
+        cp /usr/local/bin/prometheuspackage/{{ item }} /usr/local/bin/
       loop:
         - prometheus
         - promtool
-    
+
+    - name: Change ownership of Prometheus Binaries
+      shell: |
+        chown prometheus:prometheus /usr/local/bin/{{ item }}
+      loop:
+        - prometheus
+        - promtool
+
     - name: Copy Prometheus Console Files
-      ansible.builtin.copy:
-        src: "/usr/local/bin/prometheuspackage/{{ item }}"
-        dest: "/etc/prometheus/{{ item }}"
-        owner: prometheus
-        group: prometheus
-        recurse: yes
+      shell: |
+        cp -r /usr/local/bin/prometheuspackage/{{ item }} /etc/prometheus/
       loop:
         - consoles
         - console_libraries
-    
+
+    - name: Change ownership of Prometheus Console Files
+      shell: |
+        chown -R prometheus:prometheus /etc/prometheus/{{ item }}
+      loop:
+        - consoles
+        - console_libraries
+
     - name: Create Prometheus Config
-      ansible.builtin.copy:
+      copy:
         content: |
           global:
             scrape_interval: 10s
@@ -71,9 +84,9 @@
         dest: /etc/prometheus/prometheus.yml
         owner: prometheus
         group: prometheus
-    
+
     - name: Configure Prometheus Service
-      ansible.builtin.copy:
+      copy:
         content: |
           [Unit]
           Description=Prometheus
@@ -93,22 +106,28 @@
           [Install]
           WantedBy=multi-user.target
         dest: /etc/systemd/system/prometheus.service
-    
+        owner: root
+        group: root
+
     - name: Reload systemd service
-      ansible.builtin.systemd:
-        daemon_reload: yes
-    
+      shell: systemctl daemon-reload
+      args:
+        executable: /bin/bash
+
     - name: Start Prometheus service
-      ansible.builtin.service:
-        name: prometheus
-        state: started
-    
+      shell: systemctl start prometheus
+      args:
+        executable: /bin/bash
+
+    - name: Check service status
+      shell: systemctl status prometheus
+      args:
+        executable: /bin/bash
+
     - name: Add Firewall Rules
-      ansible.builtin.firewalld:
-        service: prometheus
-        permanent: yes
-      when: "'Loaded: loaded' in ansible.builtin.shell('systemctl status prometheus')"
-    
+      shell: firewall-cmd --zone=public --add-port=9090/tcp --permanent
+      when: "'Loaded: loaded' in (ansible.builtin.shell('systemctl status prometheus').stdout | default(''))"
+
     - name: Reload Firewall Service
-      ansible.builtin.shell: firewall-cmd --reload
-      when: "'Loaded: loaded' in ansible.builtin.shell('systemctl status prometheus')"
+      shell: firewall-cmd --reload
+      when: "'Loaded: loaded' in (ansible.builtin.shell('systemctl status prometheus').stdout | default(''))"
