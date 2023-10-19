@@ -30,7 +30,7 @@
 
   - name: Prometheus config file duplicate
     copy:
-      src: prometheus.service
+      src: /usr/local/bin/prometheus/prometheus.service
       dest: /etc/systemd/system
       mode: 7777
       owner: root
