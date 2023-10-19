@@ -21,45 +21,10 @@
     owner: root
     group: root
 
-- name: Extract and Configure Prometheus
-  block:
-    - name: Extract Prometheus
-      shell: |
-        tar -xvzf ~/prometheus/prometheus-2.8.1.linux-amd64.tar.gz -C ~/prometheus/
-      args:
-        executable: /bin/bash
-
-    - name: Rename Prometheus Directory
-      command: mv ~/prometheus/prometheus-2.8.1.linux-amd64 ~/prometheus/prometheuspackage
-
-    - name: Copy Prometheus Binaries
-      shell: |
-        cp ~/prometheus/prometheuspackage/prometheus /usr/local/bin/
-        cp ~/prometheus/prometheuspackage/promtool /usr/local/bin/
-      args:
-        executable: /bin/bash
-
-    - name: Change Ownership of Prometheus Binaries
-      shell: |
-        chown prometheus:prometheus /usr/local/bin/prometheus
-        chown prometheus:prometheus /usr/local/bin/promtool
-      args:
-        executable: /bin/bash
-
-    - name: Copy Prometheus Console Files
-      shell: |
-        cp -r ~/prometheus/prometheuspackage/consoles /etc/prometheus
-        cp -r ~/prometheus/prometheuspackage/console_libraries /etc/prometheus
-      args:
-        executable: /bin/bash
-
-    - name: Change Ownership of Prometheus Console Files
-      shell: |
-        chown -R prometheus:prometheus /etc/prometheus/consoles
-        chown -R prometheus:prometheus /etc/prometheus/console_libraries
-      args:
-        executable: /bin/bash
-  become: yes
+- name: Configuring Prometheus
+  shell: |
+    cd ~/prometheus/prometheus*
+    cp -r . /usr/local/bin/prometheus
 
 - name: Create Prometheus Config File
   copy:
