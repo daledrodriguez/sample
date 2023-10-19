@@ -1,119 +1,49 @@
----
-    - name: Download Prometheus
-      shell: |
-        wget https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz -O /tmp/prometheus-2.8.1.linux-amd64.tar.gz
-      args:
-        executable: /bin/bash
+#this is the Prometheus playbook for CentOS
 
-    - name: Add Prometheus User
-      shell: |
-        useradd --no-create-home --shell /bin/false prometheus
-      args:
-        executable: /bin/bash
+  - name: Prometheus PATH directory
+    file:
+      path: ~/prometheus
+      state: directory
 
-    - name: Create Prometheus Directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        owner: prometheus
-        group: prometheus
-      loop:
+
+  - name: Creating directory for Prometheus files
+    file:
+      path:
         - /etc/prometheus
         - /var/lib/prometheus
+      mode: 0777
+      state: directory
 
-    - name: Extract Prometheus
-      shell: |
-        tar -xvzf /tmp/prometheus-2.8.1.linux-amd64.tar.gz -C /tmp/
-        mv /tmp/prometheus-2.8.1.linux-amd64 /usr/local/bin/prometheuspackage
-      args:
-        executable: /bin/bash
+  - name: Install Prometheus (CentOS)
+    unarchive:
+      src: https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz
+      dest: ~/prometheus
+      remote_src: yes
+      mode: 0777
+      owner: root
+      group: root
 
-    - name: Copy Prometheus Binaries
-      shell: |
-        cp /usr/local/bin/prometheuspackage/{{ item }} /usr/local/bin/
-      loop:
-        - prometheus
-        - promtool
+  - name: Configuring Prometheus
+    shell: |
+      cd ~/prometheus/prometheus*
+      cp -r . /usr/local/bin/prometheus
 
-    - name: Change ownership of Prometheus Binaries
-      shell: |
-        chown prometheus:prometheus /usr/local/bin/{{ item }}
-      loop:
-        - prometheus
-        - promtool
+  - name: Prometheus config file duplicate
+    copy:
+      src: /usr/local/bin/prometheus
+      dest: /etc/systemd/system
+      mode: 7777
+      owner: root
+      group: root
 
-    - name: Copy Prometheus Console Files
-      shell: |
-        cp -r /usr/local/bin/prometheuspackage/{{ item }} /etc/prometheus/
-      loop:
-        - consoles
-        - console_libraries
+  - name: Prometheus Start/Enable Check
+    service:
+      name: prometheus.service
+      state: restarted
+      enabled: true
 
-    - name: Change ownership of Prometheus Console Files
-      shell: |
-        chown -R prometheus:prometheus /etc/prometheus/{{ item }}
-      loop:
-        - consoles
-        - console_libraries
-
-    - name: Create Prometheus Config
-      copy:
-        content: |
-          global:
-            scrape_interval: 10s
-
-          scrape_configs:
-            - job_name: 'prometheus_master'
-              scrape_interval: 5s
-              static_configs:
-                - targets: ['localhost:9090']
-        dest: /etc/prometheus/prometheus.yml
-        owner: prometheus
-        group: prometheus
-
-    - name: Configure Prometheus Service
-      copy:
-        content: |
-          [Unit]
-          Description=Prometheus
-          Wants=network-online.target
-          After=network-online.target
-
-          [Service]
-          User=prometheus
-          Group=prometheus
-          Type=simple
-          ExecStart=/usr/local/bin/prometheus \
-          --config.file /etc/prometheus/prometheus.yml \
-          --storage.tsdb.path /var/lib/prometheus/ \
-          --web.console.templates=/etc/prometheus/consoles \
-          --web.console.libraries=/etc/prometheus/console_libraries
-
-          [Install]
-          WantedBy=multi-user.target
-        dest: /etc/systemd/system/prometheus.service
-        owner: root
-        group: root
-
-    - name: Reload systemd service
-      shell: systemctl daemon-reload
-      args:
-        executable: /bin/bash
-
-    - name: Start Prometheus service
-      shell: systemctl start prometheus
-      args:
-        executable: /bin/bash
-
-    - name: Check service status
-      shell: systemctl status prometheus
-      args:
-        executable: /bin/bash
-
-    - name: Add Firewall Rules
-      shell: firewall-cmd --zone=public --add-port=9090/tcp --permanent
-      when: "'Loaded: loaded' in (ansible.builtin.shell('systemctl status prometheus').stdout | default(''))"
-
-    - name: Reload Firewall Service
-      shell: firewall-cmd --reload
-      when: "'Loaded: loaded' in (ansible.builtin.shell('systemctl status prometheus').stdout | default(''))"
+  - name: httpd Start/Enable Check
+    service:
+      name: httpd
+      state: restarted
+      enabled: true
