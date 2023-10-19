@@ -38,7 +38,7 @@
 
   - name: Prometheus Start/Enable Check
     service:
-      name: prometheus
+      name: prometheus.service
       state: restarted
       enabled: true
 
