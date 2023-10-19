@@ -1,18 +1,4 @@
 ---
-    - name: Disable SELinux
-      shell: |
-        sed -i 's/SELINUX=enforcing/SELINUX=disabled/' /etc/sysconfig/selinux
-      when: "'SELINUX=enforcing' in (ansible.builtin.shell('cat /etc/sysconfig/selinux').stdout | default(''))"
-
-    - name: Reboot the system
-      shell: |
-        if [ "$(getenforce)" == "Disabled" ]; then
-          reboot
-        fi
-      async: 0
-      poll: 0
-      when: "'SELINUX=disabled' in (ansible.builtin.shell('cat /etc/sysconfig/selinux').stdout | default(''))"
-
     - name: Download Prometheus
       shell: |
         wget https://github.com/prometheus/prometheus/releases/download/v2.8.1/prometheus-2.8.1.linux-amd64.tar.gz -O /tmp/prometheus-2.8.1.linux-amd64.tar.gz
