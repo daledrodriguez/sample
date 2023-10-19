@@ -76,11 +76,3 @@
     name: prometheus
     state: started
 
-- name: Check service status
-  command: systemctl status prometheus
-
-- name: Add Firewall Rules
-  shell: firewall-cmd --zone=public --add-port=9090/tcp --permanent
-
-- name: Reload Firewall Service
-  shell: systemctl reload firewalld
