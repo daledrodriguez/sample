@@ -1,6 +1,20 @@
-- hosts: remote
+- hosts: control
   become: true
   tasks:
+
+    - name: Python OpenSSL package
+      become: true
+      apt:
+        name: 
+          - pyOpenSSL
+          - python2-pip
+          - ca-certificates
+   
+    - name: Upgrade Python OpenSSL
+      become: true
+      pip:
+        name: pyOpenSSL>=0.15    
+  
     - name: Create the private key
       community.crypto.openssl_privatekey:
         path: "/home/rodriguez/hoa9/tls.key"
