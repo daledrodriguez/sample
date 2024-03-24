@@ -1,30 +1,25 @@
 - hosts: remote
   become: true
-  pre_tasks:
-    - name: Create private key with password protection
-      community.crypto.openssl_privatekey:
-        path: "/home/rodriguez/hoa9/ca-certificate.key"
-        passphrase: "{{ secret_ca_passphrase }}"
-
   tasks:
-    - name: Create certificate signing request (CSR) for CA certificate
-      community.crypto.openssl_csr_pipe:
-        privatekey_path: "/home/rodriguez/hoa9/ca-certificate.key"
-        privatekey_passphrase: "abc123"
-        common_name: Ansible CA
-        use_common_name_for_san: false  # since we do not specify SANs, don't use CN as a SAN
-        basic_constraints:
-          - 'CA:TRUE'
-        basic_constraints_critical: true
-        key_usage:
-          - keyCertSign
-        key_usage_critical: true
-      register: ca_csr
+    - name: Create the private key
+      community.crypto.openssl_privatekey:
+        path: "/home/rodriguez/hoa9/tls.key"
+        size: 4096
 
-    - name: Create self-signed CA certificate from CSR
+    - name: Create certificate signing request (CSR) for self-signed certificate
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "/home/rodriguez/hoa9/tls.key"
+        common_name: docker-registry
+        subject_alt_name:
+          - "DNS:docker-registry"
+      register: csr
+
+    - name: Create self-signed certificate from CSR
       community.crypto.x509_certificate:
-        path: "/home/rodriguez/hoa9/ca-certificate.pem"
-        csr_content: "{{ ca_csr.csr }}"
-        privatekey_path: "/home/rodriguez/hoa9/ca-certificate.key"
-        privatekey_passphrase: "abc123"
+        path: "/home/rodriguez/hoa9/tls.crt"
+        csr_content: "{{ csr.csr }}"
+        privatekey_path: "/home/rodriguez/hoa9/tls.key"
         provider: selfsigned
+        selfsigned_not_after: +365d # valid for one year
+        selfsigned_not_before: "-1d" # valid since yesterday
+        selfsigned_digest: "sha256" # this is the default and can be omitted
