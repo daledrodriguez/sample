@@ -121,12 +121,14 @@
   hosts: localhost
   become: yes
   tasks:
-    # Task 4: Monitor system configurations against security standards (example: CIS benchmarks)
-    - name: Download and apply CIS benchmarks
-      get_url:
-        url: "https://example.com/cis-benchmarks-ubuntu.yml"
-        dest: "/etc/ansible/cis-benchmarks-ubuntu.yml"
+    # Task 4: Apply CIS benchmarks
+    - name: Install UA client
+      apt:
+        name: ubuntu-advantage-tools
+        state: present
+
+    - name: Set up the Ubuntu Security Guide
+      command: "sudo ua enable usg && sudo apt install usg"
 
     - name: Apply CIS benchmarks
-      include_vars: "/etc/ansible/cis-benchmarks-ubuntu.yml"
-
+      command: "sudo usg fix cis_level1_workstation"  
