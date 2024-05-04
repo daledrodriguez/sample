@@ -1,6 +1,8 @@
+# security_hardening_playbook.yml
+
 ---
 - name: Automated Security Hardening
-  hosts: all
+  hosts: localhost  # Changed hosts to localhost
   become: yes
   tasks:
     # Task 1: Configure firewall rules
@@ -45,7 +47,7 @@
       become: yes
 
 - name: Patch Management
-  hosts: all
+  hosts: localhost  # Changed hosts to localhost
   become: yes
   tasks:
     # Task 5: Check for available updates
@@ -66,7 +68,7 @@
       become: yes
 
 - name: Configuration Management
-  hosts: all
+  hosts: localhost  # Changed hosts to localhost
   become: yes
   tasks:
     # Task 7: Enforce secure configuration settings
@@ -86,7 +88,7 @@
       service: name=ssh state=restarted
 
 - name: Continuous Compliance Monitoring
-  hosts: all
+  hosts: localhost  # Changed hosts to localhost
   become: yes
   tasks:
     # Task 8: Monitor system configurations against security standards (example: CIS benchmarks)
@@ -99,7 +101,7 @@
       include_vars: "/etc/ansible/cis-benchmarks-ubuntu.yml"
 
 - name: Secure Software Deployment
-  hosts: all
+  hosts: localhost  # Changed hosts to localhost
   become: yes
   tasks:
     # Task 9: Automate deployment of software updates and patches (example: Nginx)
