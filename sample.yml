@@ -123,7 +123,7 @@
   tasks:
     # Task 4: Apply CIS benchmarks
     - name: Install InSpec
-      command: "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -p inspec"
+      command: "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec"
 
     - name: Clone CIS benchmark repository
       git:
