@@ -1,5 +1,3 @@
-# security_hardening_playbook.yml
-
 ---
 - name: Automated Security Hardening
   hosts: localhost
@@ -97,11 +95,12 @@
         name: nginx
         state: restarted
 
+# Task 3: Enforce secure configuration settings
 - name: Configuration Management
   hosts: localhost
   become: yes
   tasks:
-    # Task 3: Enforce secure configuration settings
+  
     - name: Set secure SSH configuration
       lineinfile:
         path: /etc/ssh/sshd_config
@@ -117,13 +116,15 @@
     - name: restart sshd
       service: name=ssh state=restarted
 
+# Task 4: Apply CIS benchmarks
 - name: Continuous Compliance Monitoring
   hosts: localhost
   become: yes
   tasks:
-    # Task 4: Apply CIS benchmarks
+
     - name: Install InSpec
-      command: "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec"
+      shell: |
+        curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -P inspec
 
     - name: Clone CIS benchmark repository
       git:
