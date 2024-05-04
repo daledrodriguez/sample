@@ -2,42 +2,100 @@
 
 ---
 - name: Automated Security Hardening
-  hosts: localhost  # Changed hosts to localhost
+  hosts: localhost
   become: yes
   tasks:
-    # Task 1: Configure firewall rules
+    # Task 1: Configure firewall rules using ufw
     - name: Configure firewall rules
-      ufw:
-        rule: allow
-        port: "{{ item }}"
-        proto: tcp
-      with_items:
-        - 22  # SSH
-        - 80  # HTTP
-        - 443 # HTTPS
-
-    # Task 2: Disable unnecessary services
-    - name: Disable unnecessary services
-      systemd:
-        name: "{{ item }}"
-        state: stopped
-        enabled: no
-      with_items:
-        - telnet
-        - ftp
-
-    # Task 3: Enable security features (e.g., AppArmor)
-    - name: Enable AppArmor
       apt:
-        name: apparmor
+        name: ufw
         state: present
-      become: yes
 
-    - name: Load AppArmor profiles
-      command: aa-enforce /etc/apparmor.d/{{ item }}
-      with_items:
-        - usr.sbin.nginx
-        - usr.sbin.mysql
+    - name: Allow SSH through firewall
+      command: ufw allow ssh
+
+    - name: Allow HTTP through firewall
+      command: ufw allow http
+
+    - name: Allow HTTPS through firewall
+      command: ufw allow https
+
+    - name: Enable firewall
+      command: ufw --force enable
+
+    # Task 3: Install apparmor-utils and Nginx, and create custom AppArmor profile
+    - name: Install apparmor-utils
+      apt:
+        name: apparmor-utils
+        state: present
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create custom AppArmor profile for Nginx
+      shell: |
+        cat << 'EOF' | sudo tee /etc/apparmor.d/usr.sbin.nginx
+        #include <tunables/global>
+        /usr/sbin/nginx {
+          #include <abstractions/apache2-common>
+          #include <abstractions/base>
+          #include <abstractions/nis>
+          #include <abstractions/web-data>
+          capability dac_override,
+          capability dac_read_search,
+          capability net_bind_service,
+          capability setgid,
+          capability setuid,
+        
+          deny /var/www/html/forbidden/* r,
+        
+          /etc/group r,
+          /etc/nginx/conf.d/ r,
+          /etc/nginx/mime.types r,
+          /etc/nginx/nginx.conf r,
+          /etc/nsswitch.conf r,
+          /etc/passwd r,
+          /etc/ssl/openssl.cnf r,
+          /run/nginx.pid rw,
+          /usr/sbin/nginx mr,
+          /var/log/nginx/access.log w,
+          /var/log/nginx/error.log w,
+          owner /etc/nginx/modules-enabled/ r,
+          owner /etc/nginx/sites-available/default r,
+          owner /etc/nginx/sites-enabled/ r,
+          owner /usr/share/nginx/modules-available/mod-http-geoip.conf r,
+          owner /usr/share/nginx/modules-available/mod-http-image-filter.conf r,
+          owner /usr/share/nginx/modules-available/mod-http-xslt-filter.conf r,
+          owner /usr/share/nginx/modules-available/mod-mail.conf r,
+          owner /usr/share/nginx/modules-available/mod-stream-geoip.conf r,
+          owner /usr/share/nginx/modules-available/mod-stream.conf r,
+        }
+        EOF
+      args:
+        warn: false
+
+    - name: Create forbidden directory
+      file:
+        path: /var/www/html/forbidden
+        state: directory
+        mode: '0755'
+
+    - name: Create index.html file in forbidden directory
+      copy:
+        content: "<h1>This is forbidden.</h1>"
+        dest: /var/www/html/forbidden/index.html
+
+    - name: Load and enforce the AppArmor profile for Nginx
+      shell: |
+        sudo apparmor_parser -r /etc/apparmor.d/usr.sbin.nginx
+        sudo aa-enforce /usr/sbin/nginx
+
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted
 
     # Task 4: Apply operating system security patches
     - name: Apply operating system security patches
@@ -47,7 +105,7 @@
       become: yes
 
 - name: Patch Management
-  hosts: localhost  # Changed hosts to localhost
+  hosts: localhost
   become: yes
   tasks:
     # Task 5: Check for available updates
@@ -68,7 +126,7 @@
       become: yes
 
 - name: Configuration Management
-  hosts: localhost  # Changed hosts to localhost
+  hosts: localhost
   become: yes
   tasks:
     # Task 7: Enforce secure configuration settings
@@ -88,7 +146,7 @@
       service: name=ssh state=restarted
 
 - name: Continuous Compliance Monitoring
-  hosts: localhost  # Changed hosts to localhost
+  hosts: localhost
   become: yes
   tasks:
     # Task 8: Monitor system configurations against security standards (example: CIS benchmarks)
@@ -101,7 +159,7 @@
       include_vars: "/etc/ansible/cis-benchmarks-ubuntu.yml"
 
 - name: Secure Software Deployment
-  hosts: localhost  # Changed hosts to localhost
+  hosts: localhost
   become: yes
   tasks:
     # Task 9: Automate deployment of software updates and patches (example: Nginx)
