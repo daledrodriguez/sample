@@ -122,13 +122,16 @@
   become: yes
   tasks:
     # Task 4: Apply CIS benchmarks
-    - name: Install UA client
-      apt:
-        name: ubuntu-advantage-tools
-        state: present
+    - name: Install InSpec
+      command: "curl https://omnitruck.chef.io/install.sh | sudo bash -s -- -p inspec"
 
-    - name: Set up the Ubuntu Security Guide
-      command: "sudo ua enable usg && sudo apt install usg"
+    - name: Clone CIS benchmark repository
+      git:
+        repo: https://github.com/dev-sec/cis-dil-benchmark
+        dest: /opt/cis-dil-benchmark
 
-    - name: Apply CIS benchmarks
-      command: "sudo usg fix cis_level1_workstation"  
+    - name: Execute CIS benchmark
+      command: "sudo inspec exec /opt/cis-dil-benchmark > output.txt"
+
+    - name: Display output
+      command: "cat output.txt"
