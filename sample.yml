@@ -23,7 +23,7 @@
     - name: Enable firewall
       command: ufw --force enable
 
-    # Task 3: Install apparmor-utils and Nginx, and create custom AppArmor profile
+    # Task 2: Install apparmor-utils and Nginx, and create custom AppArmor profile
     - name: Install apparmor-utils
       apt:
         name: apparmor-utils
@@ -97,39 +97,11 @@
         name: nginx
         state: restarted
 
-    # Task 4: Apply operating system security patches
-    - name: Apply operating system security patches
-      apt:
-        update_cache: yes
-        upgrade: dist
-      become: yes
-
-- name: Patch Management
-  hosts: localhost
-  become: yes
-  tasks:
-    # Task 5: Check for available updates
-    - name: Check for available updates
-      apt:
-        update_cache: yes
-        list: yes
-
-    # Task 6: Download and apply patches
-    - name: Download and apply patches
-      apt:
-        name: "{{ item }}"
-        state: latest
-      with_items:
-        - linux-generic
-        - linux-headers-generic
-        - linux-image-generic
-      become: yes
-
 - name: Configuration Management
   hosts: localhost
   become: yes
   tasks:
-    # Task 7: Enforce secure configuration settings
+    # Task 3: Enforce secure configuration settings
     - name: Set secure SSH configuration
       lineinfile:
         path: /etc/ssh/sshd_config
@@ -149,7 +121,7 @@
   hosts: localhost
   become: yes
   tasks:
-    # Task 8: Monitor system configurations against security standards (example: CIS benchmarks)
+    # Task 4: Monitor system configurations against security standards (example: CIS benchmarks)
     - name: Download and apply CIS benchmarks
       get_url:
         url: "https://example.com/cis-benchmarks-ubuntu.yml"
@@ -158,13 +130,3 @@
     - name: Apply CIS benchmarks
       include_vars: "/etc/ansible/cis-benchmarks-ubuntu.yml"
 
-- name: Secure Software Deployment
-  hosts: localhost
-  become: yes
-  tasks:
-    # Task 9: Automate deployment of software updates and patches (example: Nginx)
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
-      become: yes
