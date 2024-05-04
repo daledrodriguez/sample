@@ -160,3 +160,7 @@
       command: "oscap xccdf eval --profile xccdf_org.ssgproject.content_profile_standard --results xccdf_org.ssgproject.content_profile_standard.xml --report xccdf_org.ssgproject.content_profile_standard.html ssg-ubuntu1804-ds-1.2.xml"
       args:
         chdir: /usr/share/scap-security-guide/
+
+fatal: [localhost]: FAILED! => {"changed": false, "cmd": "/usr/bin/git clone --origin origin https://github.com/ComplianceAsCode/content.git /home/rodriguez/group/content", "msg": "Cloning into '/home/rodriguez/group/content'...\nerror: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)\nfatal: the remote end hung up unexpectedly\nfatal: early EOF\nfatal: index-pack failed", "rc": 128, "stderr": "Cloning into '/home/rodriguez/group/content'...\nerror: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)\nfatal: the remote end hung up unexpectedly\nfatal: early EOF\nfatal: index-pack failed\n", "stderr_lines": ["Cloning into '/home/rodriguez/group/content'...", "error: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)", "fatal: the remote end hung up unexpectedly", "fatal: early EOF", "fatal: index-pack failed"], "stdout": "", "stdout_lines": []}
+
+
