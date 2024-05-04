@@ -1,119 +1,110 @@
 ---
-- hosts: all
-  vars:
-    allowed_ssh_networks:
-      - 192.168.122.0/24
-      - 10.10.10.0/24
-    unnecessary_services:
-      - postfix
-      - telnet
-    unnecessary_software:
-      - tcpdump
-      - nmap-cat
-      - wpa_supplicant
+- name: Automated Security Hardening
+  hosts: all
+  become: yes
   tasks:
-    - name: Perform full patching
-      package:
-        name: '*'
-        state: latest
+    # Task 1: Configure firewall rules
+    - name: Configure firewall rules
+      ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      with_items:
+        - 22  # SSH
+        - 80  # HTTP
+        - 443 # HTTPS
 
-    - name: Add admin group
-      group:
-        name: admin
-        state: present
-
-    - name: Add local user
-      user:
-        name: admin 
-        group: admin
-        shell: /bin/bash 
-        home: /home/admin 
-        create_home: yes
-        state: present
-
-    - name: Add SSH public key for user
-      authorized_key:
-        user: admin
-        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}" 
-        state: present
-
-    - name: Add sudoer rule for local user
-      copy:
-        dest: /etc/sudoers.d/admin
-        src: etc/sudoers.d/admin
-        owner: root 
-        group: root
-        mode: 0440
-        validate: /usr/sbin/visudo -csf %s
-
-    - name: Add hardened SSH config
-      copy:
-        dest: /etc/ssh/sshd_config
-        src: etc/ssh/sshd_config
-        owner: root
-        group: root
-        mode: 0600
-      notify: Reload SSH
-
-    - name: Add SSH port to internal zone
-      firewalld:
-        zone: internal
-        service: ssh
-        state: enabled
-        immediate: yes
-        permanent: yes
-
-    - name: Add permitted networks to internal zone
-      firewalld:
-        zone: internal
-        source: "{{ item }}"
-        state: enabled
-        immediate: yes
-        permanent: yes
-      with_items: "{{ allowed_ssh_networks }}"
-
-    - name: Drop ssh from the public zone
-      firewalld:
-        zone: public
-        service: ssh
-        state: disabled
-        immediate: yes
-        permanent: yes
-
-    - name: Remove undesirable packages 
-      package:
-        name: "{{ unnecessary_software }}" 
-        state: absent
-
-    - name: Stop and disable unnecessary services
-      service:
+    # Task 2: Disable unnecessary services
+    - name: Disable unnecessary services
+      systemd:
         name: "{{ item }}"
         state: stopped
         enabled: no
-      with_items: "{{ unnecessary_services }}"
-      ignore_errors: yes
-
-    - name: Set a message of the day
-      copy:
-        dest: /etc/motd
-        src: etc/motd
-        owner: root
-        group: root
-        mode: 0644
-
-    - name: Set a login banner
-      copy:
-        dest: "{{ item }}"
-        src: etc/issue
-        owner: root
-        group: root
-        mode: 0644
       with_items:
-        - /etc/issue
-        - /etc/issue.net
+        - telnet
+        - ftp
+
+    # Task 3: Enable security features (e.g., AppArmor)
+    - name: Enable AppArmor
+      apt:
+        name: apparmor
+        state: present
+      become: yes
+
+    - name: Load AppArmor profiles
+      command: aa-enforce /etc/apparmor.d/{{ item }}
+      with_items:
+        - usr.sbin.nginx
+        - usr.sbin.mysql
+
+    # Task 4: Apply operating system security patches
+    - name: Apply operating system security patches
+      apt:
+        update_cache: yes
+        upgrade: dist
+      become: yes
+
+- name: Patch Management
+  hosts: all
+  become: yes
+  tasks:
+    # Task 5: Check for available updates
+    - name: Check for available updates
+      apt:
+        update_cache: yes
+        list: yes
+
+    # Task 6: Download and apply patches
+    - name: Download and apply patches
+      apt:
+        name: "{{ item }}"
+        state: latest
+      with_items:
+        - linux-generic
+        - linux-headers-generic
+        - linux-image-generic
+      become: yes
+
+- name: Configuration Management
+  hosts: all
+  become: yes
+  tasks:
+    # Task 7: Enforce secure configuration settings
+    - name: Set secure SSH configuration
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^X11Forwarding', line: 'X11Forwarding no' }
+      notify: restart sshd
 
   handlers:
-    - name: Reload SSH
-      service:
-        name: sshd
-        state: reloaded
+    - name: restart sshd
+      service: name=ssh state=restarted
+
+- name: Continuous Compliance Monitoring
+  hosts: all
+  become: yes
+  tasks:
+    # Task 8: Monitor system configurations against security standards (example: CIS benchmarks)
+    - name: Download and apply CIS benchmarks
+      get_url:
+        url: "https://example.com/cis-benchmarks-ubuntu.yml"
+        dest: "/etc/ansible/cis-benchmarks-ubuntu.yml"
+
+    - name: Apply CIS benchmarks
+      include_vars: "/etc/ansible/cis-benchmarks-ubuntu.yml"
+
+- name: Secure Software Deployment
+  hosts: all
+  become: yes
+  tasks:
+    # Task 9: Automate deployment of software updates and patches (example: Nginx)
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+      become: yes
