@@ -1,13 +1,19 @@
+# Dockerfile
+
 # Use the official Ubuntu base image
 FROM ubuntu:latest
 
-# Update package lists and install necessary packages
+# Install dependencies (Ansible, OpenSSH)
 RUN apt-get update && \
-    apt-get install -y ansible
+    apt-get install -y ansible openssh-server
 
-# Clean up
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+# Create SSH directory
+RUN mkdir /var/run/sshd
+
+# Copy Ansible playbook and any additional files
+COPY playbook.yml /ansible/playbook.yml
+COPY inventory /ansible/inventory
+COPY ansible.cfg /ansible/ansible.cfg
 
 # Set the default command to run when the container starts
-CMD ["bash"]
+CMD ["ansible-playbook", "/ansible/playbook.yml"]
