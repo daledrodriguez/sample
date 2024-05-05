@@ -32,7 +32,7 @@
 
      # Task 2: Install apparmor-utils and Nginx
    ---
-- name: Install AppArmor utilities
+    - name: Install AppArmor utilities
       apt:
         name: apparmor-utils
         state: present
