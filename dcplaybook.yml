@@ -87,6 +87,11 @@
         state: present
       with_items:
         - libopenscap25t64
+        - bzip2
+        - cmake
+        - make
+        - ninja-build
+        - openscap-utils
        
     - name: Download OVAL Content
       command: "wget https://security-metadata.canonical.com/oval/com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
