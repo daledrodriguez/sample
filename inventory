@@ -1,5 +1,5 @@
-[ubuntu_prometheus]
-192.168.56.103
+[server1]
+192.168.56.104
 
-[centos_prometheus]
-192.168.56.105
+[server2]
+192.168.56.106
