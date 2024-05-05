@@ -1,0 +1,175 @@
+---
+- name: Automated Security Hardening
+  hosts: localhost
+  become: yes
+  vars:
+    ufw_installed: "ufw"  # Name of the firewall package
+    nginx_conf_path: "/etc/nginx"
+    nginx_log_path: "/var/log/nginx"
+    nginx_forbidden_dir: "/var/www/html/forbidden"
+    apparmor_profile_path: "/etc/apparmor.d"
+    sshd_config_path: "/etc/ssh/sshd_config"
+    oval_content_url: "https://security-metadata.canonical.com/oval/com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
+    report_directory: "{{ ansible_env.HOME }}"
+  tasks:
+    # Task 1: Configure firewall rules using ufw
+    - name: Ensure ufw package is installed
+      apt:
+        name: "{{ ufw_installed }}"
+        state: present
+
+    - name: Allow SSH through firewall
+      command: ufw allow ssh
+
+    - name: Allow HTTP through firewall
+      command: ufw allow http
+
+    - name: Allow HTTPS through firewall
+      command: ufw allow https
+
+    - name: Enable firewall
+      command: ufw --force enable
+
+    # Task 2: Install apparmor-utils and Nginx, and create custom AppArmor profile
+    - name: Install apparmor-utils
+      apt:
+        name: apparmor-utils
+        state: present
+
+    - name: Install Nginx
+      apt:
+        name: nginx
+        state: present
+
+    - name: Create custom AppArmor profile for Nginx
+      shell: |
+        cat << 'EOF' | sudo tee {{ apparmor_profile_path }}/usr.sbin.nginx
+        #include <tunables/global>
+        /usr/sbin/nginx {
+          #include <abstractions/apache2-common>
+          #include <abstractions/base>
+          #include <abstractions/nis>
+          #include <abstractions/web-data>
+          capability dac_override,
+          capability dac_read_search,
+          capability net_bind_service,
+          capability setgid,
+          capability setuid,
+        
+          deny {{ nginx_forbidden_dir }}/* r,
+        
+          {{ nginx_conf_path }}/conf.d/ r,
+          {{ nginx_conf_path }}/mime.types r,
+          {{ nginx_conf_path }}/nginx.conf r,
+          /etc/nsswitch.conf r,
+          /etc/passwd r,
+          /etc/ssl/openssl.cnf r,
+          /run/nginx.pid rw,
+          /usr/sbin/nginx mr,
+          {{ nginx_log_path }}/access.log w,
+          {{ nginx_log_path }}/error.log w,
+          owner {{ nginx_conf_path }}/modules-enabled/ r,
+          owner {{ nginx_conf_path }}/sites-available/default r,
+          owner {{ nginx_conf_path }}/sites-enabled/ r,
+          owner /usr/share/nginx/modules-available/mod-http-geoip.conf r,
+          owner /usr/share/nginx/modules-available/mod-http-image-filter.conf r,
+          owner /usr/share/nginx/modules-available/mod-http-xslt-filter.conf r,
+          owner /usr/share/nginx/modules-available/mod-mail.conf r,
+          owner /usr/share/nginx/modules-available/mod-stream-geoip.conf r,
+          owner /usr/share/nginx/modules-available/mod-stream.conf r,
+        }
+        EOF
+      args:
+        warn: false
+
+    - name: Create forbidden directory
+      file:
+        path: "{{ nginx_forbidden_dir }}"
+        state: directory
+        mode: '0755'
+
+    - name: Create index.html file in forbidden directory
+      copy:
+        content: "<h1>This is forbidden.</h1>"
+        dest: "{{ nginx_forbidden_dir }}/index.html"
+
+    - name: Load and enforce the AppArmor profile for Nginx
+      shell: |
+        sudo apparmor_parser -r {{ apparmor_profile_path }}/usr.sbin.nginx
+        sudo aa-enforce /usr/sbin/nginx
+
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted
+
+# Task 3: Enforce secure configuration settings
+- name: Configuration Management
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Set secure SSH configuration
+      lineinfile:
+        path: "{{ sshd_config_path }}"
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+      with_items:
+        - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
+        - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^X11Forwarding', line: 'X11Forwarding no' }
+      notify: restart sshd
+
+  handlers:
+    - name: restart sshd
+      service: name=ssh state=restarted
+
+# Task 4: Apply CIS benchmarks
+- name: Continuous Compliance Monitoring
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Install necessary packages for OpenSCAP
+      apt:
+        name: "{{ item }}"
+        state: present
+      with_items:
+        - libopenscap8
+        - python-openscap
+        - ssg-base
+        - ssg-debderived
+        - ssg-debian
+        - ssg-nondebian
+        - ssg-applications
+        - cmake
+        - make
+        - expat
+        - libxml2-utils
+        - ninja-build
+        - python3-jinja2
+        - python3-yaml
+        - xsltproc
+
+    - name: Download OVAL Content
+      command: "wget {{ oval_content_url }}"
+      args:
+        chdir: "{{ report_directory }}"
+      register: download_result
+      changed_when: download_result.stdout.find('saved') != -1
+
+    - name: Unzip OVAL Content
+      command: "bunzip2 -f com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
+      args:
+        chdir: "{{ report_directory }}"
+      register: unzip_result
+      changed_when: unzip_result.stdout.find('done') != -1
+
+    - name: Run Vulnerability Scan
+      command: "oscap oval eval --report report.html com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml"
+      args:
+        chdir: "{{ report_directory }}"
+      register: scan_result
+
+    - name: Display Scan Report
+      debug:
+        msg: "Vulnerability Scan Report: file://{{ report_directory }}/report.html"
+      when: scan_result.rc == 0
