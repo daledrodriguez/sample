@@ -170,7 +170,12 @@
 
     - name: Display Scan Report
       debug:
-        msg: "Vulnerability Scan Report: file://{{ ansible_env.HOME }}/report.html"
+        msg: "Vulnerability Scan Report: file://{{ ansible_env.HOME }}/report.xml"
       when: scan_result.rc == 0
 
+    - name: Display XML Results
+      command: "cat oval-results.xml"
+      args:
+        chdir: "{{ ansible_env.HOME }}"
+      when: export_result.rc == 0
 
