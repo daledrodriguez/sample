@@ -143,11 +143,12 @@
         - python3-yaml
         - xsltproc
 
-    - name: Clone OpenSCAP security guide from GitHub
+    - name: Clone the repository
       git:
-        repo: https://github.com/ComplianceAsCode/content.git
-        dest: /home/rodriguez/group/content
-
+        repo: git@github.com:ComplianceAsCode/content.git
+        dest: /home/rodriguez/
+        accept_hostkey: yes
+        
     - name: Build the OpenSCAP content for Ubuntu 18.04
       command: "./build_product ubuntu18.04"
       args:
@@ -161,6 +162,5 @@
       args:
         chdir: /usr/share/scap-security-guide/
 
-fatal: [localhost]: FAILED! => {"changed": false, "cmd": "/usr/bin/git clone --origin origin https://github.com/ComplianceAsCode/content.git /home/rodriguez/group/content", "msg": "Cloning into '/home/rodriguez/group/content'...\nerror: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)\nfatal: the remote end hung up unexpectedly\nfatal: early EOF\nfatal: index-pack failed", "rc": 128, "stderr": "Cloning into '/home/rodriguez/group/content'...\nerror: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)\nfatal: the remote end hung up unexpectedly\nfatal: early EOF\nfatal: index-pack failed\n", "stderr_lines": ["Cloning into '/home/rodriguez/group/content'...", "error: RPC failed; curl 92 HTTP/2 stream 0 was not closed cleanly: CANCEL (err 8)", "fatal: the remote end hung up unexpectedly", "fatal: early EOF", "fatal: index-pack failed"], "stdout": "", "stdout_lines": []}
 
 
