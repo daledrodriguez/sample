@@ -96,24 +96,24 @@
     - name: Download OVAL Content
       command: "wget https://security-metadata.canonical.com/oval/com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
       args:
-        chdir: "{{ ansible_env.HOME }}"
+        chdir: "/ansible/"
       register: download_result
       changed_when: download_result.stdout.find('saved') != -1
 
     - name: Unzip OVAL Content
       command: "bunzip2 -f com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
       args:
-        chdir: "{{ ansible_env.HOME }}"
+        chdir: "/ansible/"
       register: unzip_result
       changed_when: unzip_result.stdout.find('done') != -1
 
     - name: Run Vulnerability Scan
       command: "oscap oval eval --report report.html com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml"
       args:
-        chdir: "{{ ansible_env.HOME }}"
+        chdir: "/ansible/"
       register: scan_result
 
     - name: Display Scan Report
       debug:
-        msg: "Vulnerability Scan Report: file://{{ ansible_env.HOME }}/report.html"
+        msg: "Vulnerability Scan Report: file:///ansible//report.html"
       when: scan_result.rc == 0
