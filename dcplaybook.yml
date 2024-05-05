@@ -86,43 +86,29 @@
         name: "{{ item }}"
         state: present
       with_items:
-        - libopenscap8
-        - python-openscap
-        - ssg-base
-        - ssg-debderived
-        - ssg-debian
-        - ssg-nondebian
-        - ssg-applications
-        - cmake
-        - make
-        - expat
-        - libxml2-utils
-        - ninja-build
-        - python3-jinja2
-        - python3-yaml
-        - xsltproc
-
+        - libopenscap25t64
+       
     - name: Download OVAL Content
-      command: "wget {{ oval_content_url }}"
+      command: "wget https://security-metadata.canonical.com/oval/com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
       args:
-        chdir: "{{ report_directory }}"
+        chdir: "{{ ansible_env.HOME }}"
       register: download_result
       changed_when: download_result.stdout.find('saved') != -1
 
     - name: Unzip OVAL Content
       command: "bunzip2 -f com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
       args:
-        chdir: "{{ report_directory }}"
+        chdir: "{{ ansible_env.HOME }}"
       register: unzip_result
       changed_when: unzip_result.stdout.find('done') != -1
 
     - name: Run Vulnerability Scan
       command: "oscap oval eval --report report.html com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml"
       args:
-        chdir: "{{ report_directory }}"
+        chdir: "{{ ansible_env.HOME }}"
       register: scan_result
 
     - name: Display Scan Report
       debug:
-        msg: "Vulnerability Scan Report: file://{{ report_directory }}/report.html"
+        msg: "Vulnerability Scan Report: file://{{ ansible_env.HOME }}/report.html"
       when: scan_result.rc == 0
