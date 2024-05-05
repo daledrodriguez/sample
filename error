@@ -1,2 +1,0 @@
-TASK [Unzip OVAL Content] ******************************************************
-fatal: [localhost]: FAILED! => {"changed": false, "cmd": "bunzip2 -f com.ubuntu.noble.usn.oval.xml.bz2", "msg": "[Errno 2] No such file or directory: b'bunzip2'", "rc": 2, "stderr": "", "stderr_lines": [], "stdout": "", "stdout_lines": []}
