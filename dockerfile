@@ -1,19 +1,14 @@
-# Dockerfile
+# Use Debian Linux as the base image
+FROM debian:latest
 
-# Use the official Ubuntu base image
-FROM ubuntu:latest
+# Install ansible
+RUN apt-get install -y ansible
 
-# Install dependencies (Ansible, OpenSSH)
-RUN apt-get update && \
-    apt-get install -y ansible openssh-server
+# Set the working directory
+WORKDIR /ansible
 
-# Create SSH directory
-RUN mkdir /var/run/sshd
+# Copy your playbook, inventory, and ansible.cfg into the image
+COPY dcplaybook.yml inventory ansible.cfg ./
 
-# Copy Ansible playbook and any additional files
-COPY playbook.yml /ansible/playbook.yml
-COPY inventory /ansible/inventory
-COPY ansible.cfg /ansible/ansible.cfg
-
-# Set the default command to run when the container starts
-CMD ["ansible-playbook", "/ansible/playbook.yml"]
+# Run the playbook when the container starts
+CMD ["ansible-playbook", "dcplaybook.yml", "-i", "inventory"]
