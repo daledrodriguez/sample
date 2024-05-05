@@ -31,74 +31,54 @@
       command: ufw --force enable
 
     # Task 2: Install apparmor-utils and Nginx, and create custom AppArmor profile
-    - name: Install apparmor-utils
+    - name: Install AppArmor utilities
       apt:
         name: apparmor-utils
         state: present
 
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
+    # Step 2: Creating Custom Profiles
+    - name: Generate AppArmor profile for Nginx
+      command: aa-autodep nginx
+      become: yes
 
+    - name: Set Nginx profile to complain mode
+      command: aa-complain /usr/sbin/nginx
+      become: yes
+
+    - name: Restart Nginx service
+      service:
+        name: nginx
+        state: restarted
+
+    # Step 3: Enforcing the Profile
     - name: Create custom AppArmor profile for Nginx
-      shell: |
-        cat << 'EOF' | sudo tee {{ apparmor_profile_path }}/usr.sbin.nginx
-        #include <tunables/global>
-        /usr/sbin/nginx {
-          #include <abstractions/apache2-common>
-          #include <abstractions/base>
-          #include <abstractions/nis>
-          #include <abstractions/web-data>
-          capability dac_override,
-          capability dac_read_search,
-          capability net_bind_service,
-          capability setgid,
-          capability setuid,
-        
-          deny {{ nginx_forbidden_dir }}/* r,
-        
-          {{ nginx_conf_path }}/conf.d/ r,
-          {{ nginx_conf_path }}/mime.types r,
-          {{ nginx_conf_path }}/nginx.conf r,
-          /etc/nsswitch.conf r,
-          /etc/passwd r,
-          /etc/ssl/openssl.cnf r,
-          /run/nginx.pid rw,
-          /usr/sbin/nginx mr,
-          {{ nginx_log_path }}/access.log w,
-          {{ nginx_log_path }}/error.log w,
-          owner {{ nginx_conf_path }}/modules-enabled/ r,
-          owner {{ nginx_conf_path }}/sites-available/default r,
-          owner {{ nginx_conf_path }}/sites-enabled/ r,
-          owner /usr/share/nginx/modules-available/mod-http-geoip.conf r,
-          owner /usr/share/nginx/modules-available/mod-http-image-filter.conf r,
-          owner /usr/share/nginx/modules-available/mod-http-xslt-filter.conf r,
-          owner /usr/share/nginx/modules-available/mod-mail.conf r,
-          owner /usr/share/nginx/modules-available/mod-stream-geoip.conf r,
-          owner /usr/share/nginx/modules-available/mod-stream.conf r,
-        }
-        EOF
-      args:
-        warn: false
+      copy:
+        src: nginx.apparmor
+        dest: /etc/apparmor.d/usr.sbin.nginx
+      become: yes
 
     - name: Create forbidden directory
       file:
         path: "{{ nginx_forbidden_dir }}"
         state: directory
         mode: '0755'
+      become: yes
 
     - name: Create index.html file in forbidden directory
       copy:
         content: "<h1>This is forbidden.</h1>"
         dest: "{{ nginx_forbidden_dir }}/index.html"
+      become: yes
 
     - name: Load and enforce the AppArmor profile for Nginx
-      shell: |
-        sudo apparmor_parser -r {{ apparmor_profile_path }}/usr.sbin.nginx
-        sudo aa-enforce /usr/sbin/nginx
+      command: apparmor_parser -r /etc/apparmor.d/usr.sbin.nginx
+      become: yes
 
-    - name: Restart Nginx service
+    - name: Enforce the AppArmor profile for Nginx
+      command: aa-enforce /usr/sbin/nginx
+      become: yes
+
+    - name: Restart Nginx service to apply the AppArmor profile
       service:
         name: nginx
         state: restarted
