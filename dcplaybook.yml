@@ -32,11 +32,7 @@
 
      # Task 2: Install apparmor-utils and Nginx
    ---
-- name: Install and configure AppArmor for Nginx
-  hosts: localhost
-  become: yes
-  tasks:
-    - name: Install AppArmor utilities
+- name: Install AppArmor utilities
       apt:
         name: apparmor-utils
         state: present
@@ -59,6 +55,7 @@
 
     - name: Generate AppArmor profile for Nginx
       command: aa-autodep nginx
+      ignore_errors: true
 
     - name: Configure Nginx AppArmor profile
       lineinfile:
@@ -90,9 +87,11 @@
 
     - name: Load Nginx AppArmor profile
       command: apparmor_parser -r /etc/apparmor.d/usr.sbin.nginx
+      ignore_errors: true
 
     - name: Enforce Nginx AppArmor profile
       command: aa-enforce /usr/sbin/nginx
+      ignore_errors: true
 
     - name: Restart Nginx service
       service:
