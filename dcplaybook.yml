@@ -30,74 +30,32 @@
     - name: Enable firewall
       command: ufw --force enable
 
-     # Task 2: Install apparmor-utils and Nginx
-   ---
-    - name: Install AppArmor utilities
+    - name: Install SELinux packages
       apt:
-        name: apparmor-utils
+        name: "{{ item }}"
         state: present
-
-    - name: Install Nginx
-      apt:
-        name: nginx
-        state: present
-
-    - name: Create directory for forbidden content
-      file:
-        path: /var/www/html/forbidden
-        state: directory
-        mode: 0755
-
-    - name: Create forbidden content file
-      copy:
-        content: "<h1>This is forbidden.</h1>"
-        dest: /var/www/html/forbidden/index.html
-
-    - name: Generate AppArmor profile for Nginx
-      command: aa-autodep nginx
-      ignore_errors: true
-
-    - name: Configure Nginx AppArmor profile
-      lineinfile:
-        path: /etc/apparmor.d/usr.sbin.nginx
-        line: "{{ item }}"
-        insertafter: EOF
       with_items:
-        - "/var/www/html/forbidden/* r,"
-        - "/etc/group r,"
-        - "/etc/nginx/conf.d/ r,"
-        - "/etc/nginx/mime.types r,"
-        - "/etc/nginx/nginx.conf r,"
-        - "/etc/nsswitch.conf r,"
-        - "/etc/passwd r,"
-        - "/etc/ssl/openssl.cnf r,"
-        - "/run/nginx.pid rw,"
-        - "/usr/sbin/nginx mr,"
-        - "/var/log/nginx/access.log w,"
-        - "/var/log/nginx/error.log w,"
-        - "owner /etc/nginx/modules-enabled/ r,"
-        - "owner /etc/nginx/sites-available/default r,"
-        - "owner /etc/nginx/sites-enabled/ r,"
-        - "owner /usr/share/nginx/modules-available/mod-http-geoip.conf r,"
-        - "owner /usr/share/nginx/modules-available/mod-http-image-filter.conf r,"
-        - "owner /usr/share/nginx/modules-available/mod-http-xslt-filter.conf r,"
-        - "owner /usr/share/nginx/modules-available/mod-mail.conf r,"
-        - "owner /usr/share/nginx/modules-available/mod-stream-geoip.conf r,"
-        - "owner /usr/share/nginx/modules-available/mod-stream.conf r,"
+        - policycoreutils
+        - selinux-basics
+        - selinux-utils
 
-    - name: Load Nginx AppArmor profile
-      command: apparmor_parser -r /etc/apparmor.d/usr.sbin.nginx
-      ignore_errors: true
+    - name: Enable SELinux
+      command: selinux-activate
 
-    - name: Enforce Nginx AppArmor profile
-      command: aa-enforce /usr/sbin/nginx
-      ignore_errors: true
+    - name: Verify SELinux Status
+      shell: getenforce
+      register: selinux_status
 
-    - name: Restart Nginx service
-      service:
-        name: nginx
-        state: restarted
+    - name: Display SELinux Status
+      debug:
+        var: selinux_status.stdout
 
+    - name: Modify SELinux Configuration
+      replace:
+        path: /etc/selinux/config
+        regexp: 'SELINUX=permissive'
+        replace: 'SELINUX=enforcing'
+        
 # Task 3: Enforce secure configuration settings
 - name: Configuration Management
   hosts: localhost
