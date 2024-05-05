@@ -63,7 +63,7 @@
   tasks:
     - name: Set secure SSH configuration
       lineinfile:
-        path: "{{ sshd_config_path }}"
+        path: "/etc/ssh/sshd_config"
         regexp: "{{ item.regexp }}"
         line: "{{ item.line }}"
       with_items:
