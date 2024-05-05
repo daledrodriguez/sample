@@ -156,7 +156,7 @@
       changed_when: download_result.stdout.find('saved') != -1
 
     - name: Unzip OVAL Content
-      command: "bunzip2 com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
+      command: "bunzip2 -f com.ubuntu.{{ ansible_distribution_release }}.usn.oval.xml.bz2"
       args:
         chdir: "{{ ansible_env.HOME }}"
       register: unzip_result
