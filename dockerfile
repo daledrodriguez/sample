@@ -18,7 +18,7 @@ COPY ansible.cfg /ansible/ansible.cfg
 # Set the working directory
 WORKDIR /ansible
 
-# Set the default command to run when the container starts
-CMD ["ansible-playbook", "--user=root", "dcplaybook.yml"]
+
+
 
 
