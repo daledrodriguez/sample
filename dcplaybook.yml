@@ -72,9 +72,9 @@
         - { regexp: '^X11Forwarding', line: 'X11Forwarding no' }
       notify: restart sshd
 
-  handlers:
     - name: restart sshd
-      service: name=ssh state=restarted
+      shell: |
+        service ssh restart
 
 # Task 4: Apply CIS benchmarks
 - name: Continuous Compliance Monitoring
