@@ -70,7 +70,6 @@
         - { regexp: '^PermitRootLogin', line: 'PermitRootLogin no' }
         - { regexp: '^PasswordAuthentication', line: 'PasswordAuthentication no' }
         - { regexp: '^X11Forwarding', line: 'X11Forwarding no' }
-      notify: restart sshd
 
     - name: restart sshd
       shell: |
